@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Matriz de Habilidades - Industrial</title>
+    <title>Matriz de Habilidades - AutoSave</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -32,7 +32,7 @@
             <button type="submit" class="btn-principal">Agregar a la lista</button>
         </form>
 
-        <h2>Lista de Empleados</h2>
+        <h2>Lista de Empleados Registrados</h2>
         <input type="text" id="buscarEmpleado" class="buscador" placeholder="🔍 Buscar por nombre..." onkeyup="filtrarEmpleados()">
         <div class="table-responsive">
             <table id="tablaEmpleados">
@@ -53,7 +53,7 @@
             <h2 id="tituloEmpleado">Seleccione un empleado</h2>
             
             <div class="status-barra">
-                <span id="estadoGuardado">✨ Listo</span>
+                <span id="estadoGuardado">✨ Listo para evaluar</span>
             </div>
 
             <div class="controles">
@@ -70,16 +70,19 @@
                             <th>0</th><th>1</th><th>2</th><th>3</th><th>4</th>
                         </tr>
                     </thead>
-                    <tbody id="cuerpoMatriz">
-                        </tbody>
+                    <tbody id="tablaMatriz">
+                        <tr class="seccion" id="sec-habilidades"><td colspan="6">HABILIDADES</td></tr>
+                        <tr class="seccion" id="sec-conocimientos"><td colspan="6">CONOCIMIENTOS</td></tr>
+                        <tr class="seccion" id="sec-antropometria"><td colspan="6">MEDIDAS ANTROPOMÉTRICAS</td></tr>
+                    </tbody>
                 </table>
             </div>
         </div>
 
-        <h2>Resultados Finales</h2>
+        <h2>Resultados Generales</h2>
         <div class="controles">
-            <button onclick="exportarCSV()" style="background-color: #17a2b8;">Exportar a Excel</button>
-            <button onclick="limpiarTodo()" class="btn-eliminar">Borrar Todo</button>
+            <button onclick="exportarCSV()" style="background-color: #17a2b8;">Exportar a Excel (CSV)</button>
+            <button onclick="limpiarTodo()" class="btn-eliminar">Borrar Base de Datos</button>
         </div>
         <div class="table-responsive">
             <table id="tablaFinal">
