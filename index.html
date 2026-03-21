@@ -92,11 +92,11 @@
     </table>
 </div>
 
-<script src="script.js"></script>
+<script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
   import { getDatabase, ref, set, onValue, push } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
+  import { iniciarApp } from "./script.js";
 
-  // TU CONFIGURACIÓN (La que me pasaste)
   const firebaseConfig = {
     apiKey: "AIzaSyCNokOSiV483vppPmDwtWs0nH1evzZwbjU",
     authDomain: "matriz-de-habilidades-c4bd5.firebaseapp.com",
@@ -107,13 +107,12 @@
     appId: "1:190967468978:web:8e40bde48a4a2355814aab"
   };
 
-  // Inicializar Firebase
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
 
-  // Importamos la lógica de tu aplicación
-  // (Asegúrate de que tu archivo JS se llame 'script.js')
-  import { iniciarApp } from "./script.js?v=1";
-  iniciarApp(db, ref, set, onValue, push);
+  // 🔥 ESTO ES LA CLAVE
+  window.addEventListener("DOMContentLoaded", () => {
+    iniciarApp(db, ref, set, onValue, push);
+  });
 </script>
 </html>
