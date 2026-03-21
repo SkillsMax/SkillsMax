@@ -1,0 +1,100 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+    background: #f4f4f4;
+}
+
+h1, h2, h3 {
+    color: #333;
+}
+
+/* Ajuste para que los inputs se vean bien en móviles */
+form input {
+    margin: 5px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    width: calc(100% - 24px); /* Full width en móvil */
+    max-width: 200px; /* Tamaño máximo en PC */
+    box-sizing: border-box;
+}
+
+button {
+    padding: 10px 15px;
+    cursor: pointer;
+    border: none;
+    border-radius: 4px;
+    background-color: #007BFF;
+    color: white;
+    margin: 5px;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+.buscador {
+    width: 100%;
+    max-width: 400px;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #007BFF;
+    border-radius: 4px;
+}
+
+.btn-eliminar { background-color: #dc3545; }
+.btn-eliminar:hover { background-color: #c82333; }
+
+.btn-eliminar-criterio {
+    background-color: #dc3545;
+    color: white;
+    font-size: 10px;
+    padding: 3px 6px;
+    margin-right: 10px;
+    border-radius: 50%;
+}
+
+.btn-guardar {
+    margin-top: 15px;
+    background-color: #28a745;
+    width: 100%;
+    font-size: 16px;
+    padding: 12px;
+}
+.btn-guardar:hover { background-color: #218838; }
+
+/* Contenedor para hacer tablas desplazables en móvil */
+.table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    margin-top: 10px;
+}
+
+table {
+    width: 100%;
+    min-width: 600px; /* Evita que la tabla se aplaste demasiado */
+    border-collapse: collapse;
+    background: white;
+}
+
+th, td {
+    border: 1px solid #ccc;
+    padding: 10px;
+    text-align: center;
+}
+
+.seccion td {
+    background-color: #e9ecef;
+    font-weight: bold;
+    text-align: left;
+}
+
+.controles { margin-bottom: 10px; }
+.oculto { display: none; }
+.apto { background-color: #c8f7c5; }
+.no-apto { background-color: #f7c5c5; }
+
+/* Media Query para pantallas pequeñas */
+@media (max-width: 600px) {
+    form input { max-width: 100%; }
+}
