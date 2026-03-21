@@ -4,7 +4,7 @@ let criteriosPorPuesto = {};
 let empleadoActual = null;
 const PIN_ACCESO = "1432";
 
-function iniciarApp(db, ref, set, onValue, push) {
+export function iniciarApp(db, ref, set, onValue, push) {
     const dbRef = ref(db, 'matriz_habilidades');
 
     // --- ESCUCHAR CAMBIOS ---
