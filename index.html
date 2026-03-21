@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Matriz de Habilidades - AutoSave</title>
+    <title>Matriz de Habilidades - Sistema Industrial</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -50,18 +50,12 @@
 
     <section id="seccion-evaluacion" class="apartado oculto">
         <div id="evaluacion" class="contenedor-evaluacion oculto">
-            <h2 id="tituloEmpleado">Seleccione un empleado</h2>
-            
-            <div class="status-barra">
-                <span id="estadoGuardado">✨ Listo para evaluar</span>
-            </div>
-
+            <h2 id="tituloEmpleado">Seleccione un empleado para evaluar</h2>
             <div class="controles">
                 <button onclick="agregarItem('habilidades')">+ Habilidad</button>
                 <button onclick="agregarItem('conocimientos')">+ Conocimiento</button>
                 <button onclick="agregarItem('antropometria')">+ Antropometría</button>
             </div>
-            
             <div class="table-responsive">
                 <table class="matriz">
                     <thead>
@@ -77,6 +71,7 @@
                     </tbody>
                 </table>
             </div>
+            <button class="btn-guardar" onclick="guardarEvaluacion()">Guardar Evaluación en la Nube</button>
         </div>
 
         <h2>Resultados Generales</h2>
@@ -102,7 +97,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
+        import { getDatabase, ref, set, onValue, push } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
         import { iniciarApp } from "./script.js";
 
         const firebaseConfig = {
@@ -119,7 +114,7 @@
         const db = getDatabase(app);
 
         window.addEventListener("DOMContentLoaded", () => {
-            iniciarApp(db, ref, set, onValue);
+            iniciarApp(db, ref, set, onValue, push);
         });
     </script>
 </body>
