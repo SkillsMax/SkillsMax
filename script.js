@@ -1,4 +1,3 @@
-// Variables globales
 let empleados = [];
 let criteriosPorPuesto = {};
 let empleadoActual = null;
@@ -7,98 +6,69 @@ const PIN_ACCESO = "1432";
 export function iniciarApp(db, ref, set, onValue, push) {
     const dbRef = ref(db, 'matriz_habilidades');
 
-    // --- ESCUCHAR CAMBIOS ---
+    // --- SINCRONIZACIÓN ---
     onValue(dbRef, (snapshot) => {
         const data = snapshot.val();
         empleados = data?.empleados || [];
         criteriosPorPuesto = data?.criterios || {};
-
         mostrarEmpleados();
         mostrarMatrizFinal();
     });
 
-    const sincronizarNube = () => {
-        set(dbRef, {
-            empleados,
-            criterios: criteriosPorPuesto
-        });
+    const sincronizar = () => {
+        set(dbRef, { empleados, criterios: criteriosPorPuesto });
     };
 
-    // --- FORMULARIO ---
+    // --- NAVEGACIÓN ---
+    window.cambiarSeccion = (id) => {
+        document.querySelectorAll('.apartado').forEach(s => s.classList.add('oculto'));
+        document.getElementById(id).classList.remove('oculto');
+    };
+
+    // --- LÓGICA DE EMPLEADOS ---
     document.getElementById("formEmpleado").addEventListener("submit", function(e) {
         e.preventDefault();
-
-        let nombreIngresado = document.getElementById("nombre").value.trim();
-
-        if (empleados.some(emp => emp.nombre.toLowerCase() === nombreIngresado.toLowerCase())) {
-            alert("⚠️ Esta persona ya está registrada.");
-            return;
-        }
-
-        let nuevoEmpleado = {
-            nombre: nombreIngresado,
+        let nuevo = {
+            nombre: document.getElementById("nombre").value.trim(),
             puesto: document.getElementById("puesto").value.trim().toUpperCase(),
             cuadrilla: document.getElementById("cuadrilla").value,
             anios: document.getElementById("anios").value,
             peso: document.getElementById("peso").value,
             estatura: document.getElementById("estatura").value,
             escolaridad: document.getElementById("escolaridad").value,
-            evaluacion: null,
-            respuestas: {},
-            detalleTexto: [],
-            fecha: "Pendiente"
+            evaluacion: null, respuestas: {}, detalleTexto: [], fecha: "Pendiente"
         };
-
-        empleados.push(nuevoEmpleado);
-        sincronizarNube();
+        empleados.push(nuevo);
+        sincronizar();
         this.reset();
+        alert("✅ Empleado registrado");
     });
 
-    // --- FUNCIONES GLOBALES ---
     window.evaluar = (index) => {
-        let password = prompt("🔒 Código de acceso:");
-        if (password !== PIN_ACCESO) return alert("Acceso denegado");
+        let pass = prompt("🔒 PIN de Evaluador:");
+        if (pass !== PIN_ACCESO) return alert("Incorrecto");
 
         empleadoActual = index;
         let emp = empleados[index];
-        let puesto = emp.puesto;
-
-        document.getElementById("tituloEmpleado").innerText =
-            `${emp.nombre} - [${puesto}]`;
-
-        if (!criteriosPorPuesto[puesto]) {
-            criteriosPorPuesto[puesto] = {
-                habilidades: [],
-                conocimientos: [],
-                antropometria: []
-            };
+        document.getElementById("tituloEmpleado").innerText = `Evaluando a: ${emp.nombre} (${emp.puesto})`;
+        
+        if (!criteriosPorPuesto[emp.puesto]) {
+            criteriosPorPuesto[emp.puesto] = { habilidades: [], conocimientos: [], antropometria: [] };
         }
 
-        renderizarMatriz(puesto);
+        renderizarMatriz(emp.puesto);
         document.getElementById("evaluacion").classList.remove("oculto");
+        cambiarSeccion('seccion-evaluacion');
     };
 
     window.agregarItem = (tipo) => {
-        if (empleadoActual === null) {
-            alert("Primero selecciona un empleado en 'Evaluar' para definir las habilidades de su puesto.");
-            return;
-        }
-        
+        if (empleadoActual === null) return alert("Selecciona un empleado primero");
         let puesto = empleados[empleadoActual].puesto;
-
-        // Asegurar que la estructura existe en la base de datos
-        if (!criteriosPorPuesto[puesto]) {
-            criteriosPorPuesto[puesto] = { habilidades: [], conocimientos: [], antropometria: [] };
-        }
-        if (!criteriosPorPuesto[puesto][tipo]) {
-            criteriosPorPuesto[puesto][tipo] = [];
-        }
-
-        let texto = prompt(`Nuevo ${tipo}:`);
-
+        let texto = prompt(`Nuevo concepto de ${tipo}:`);
         if (texto) {
+            if (!criteriosPorPuesto[puesto][tipo]) criteriosPorPuesto[puesto][tipo] = [];
             criteriosPorPuesto[puesto][tipo].push(texto);
-            sincronizarNube();
+            sincronizar();
             renderizarMatriz(puesto);
         }
     };
@@ -106,164 +76,86 @@ export function iniciarApp(db, ref, set, onValue, push) {
     window.guardarEvaluacion = () => {
         let emp = empleados[empleadoActual];
         let criterios = criteriosPorPuesto[emp.puesto];
+        let total = 0, n = 0;
 
-        let total = 0;
-        let nCriterios =
-            criterios.habilidades.length +
-            criterios.conocimientos.length +
-            criterios.antropometria.length;
-
-        if (nCriterios === 0) {
-            alert("No hay criterios definidos.");
-            return;
-        }
-
-        let seleccionados = document.querySelectorAll("#evaluacion input[type=radio]:checked");
-
-        if (seleccionados.length < nCriterios) {
-            alert("Faltan calificaciones");
-            return;
-        }
-
-        emp.respuestas = {};
-        emp.detalleTexto = [];
-
-        ['habilidades', 'conocimientos', 'antropometria'].forEach(tipo => {
-            criterios[tipo].forEach((texto, i) => {
-                let input = document.querySelector(`input[name="radio_${tipo}_${i}"]:checked`);
-                let val = parseInt(input.value);
-
-                total += val;
-                emp.respuestas[input.name] = val;
-                emp.detalleTexto.push(`${texto}: ${val}`);
+        ['habilidades', 'conocimientos', 'antropometria'].forEach(t => {
+            criterios[t].forEach((text, i) => {
+                let radio = document.querySelector(`input[name="radio_${t}_${i}"]:checked`);
+                if (radio) {
+                    let v = parseInt(radio.value);
+                    total += v;
+                    emp.respuestas[`radio_${t}_${i}`] = v;
+                    n++;
+                }
             });
         });
 
-        let porcentaje = (total / (nCriterios * 4)) * 100;
-
-        emp.evaluacion = {
-            total,
-            porcentaje: porcentaje.toFixed(2),
-            resultado: porcentaje >= 70 ? "Apto" : "No apto"
-        };
-
+        if (n === 0) return alert("No hay criterios para evaluar");
+        
+        let porc = (total / (n * 4)) * 100;
+        emp.evaluacion = { total, porcentaje: porc.toFixed(2), resultado: porc >= 70 ? "Apto" : "No apto" };
         emp.fecha = new Date().toLocaleString();
-
-        sincronizarNube();
+        
+        sincronizar();
+        alert("⭐⭐ Evaluación Guardada");
         document.getElementById("evaluacion").classList.add("oculto");
-
-        alert("✅ Evaluación guardada");
     };
 
-    window.eliminarEmpleado = (index) => {
-        if (confirm(`¿Eliminar a ${empleados[index].nombre}?`)) {
-            empleados.splice(index, 1);
-            sincronizarNube();
-        }
-    };
-
-    window.limpiarTodo = () => {
-        if (prompt("Código ADMIN:") === PIN_ACCESO &&
-            confirm("¿Borrar todo?")) {
-            set(dbRef, null);
-        }
-    };
-
-    window.exportarCSV = exportarCSV;
-    window.filtrarEmpleados = filtrarEmpleados;
-
-    // --- FUNCIONES INTERNAS ---
+    // --- RENDERIZADO ---
     function renderizarMatriz(puesto) {
         document.querySelectorAll(".item-criterio").forEach(el => el.remove());
-
-        let criterios = criteriosPorPuesto[puesto];
-        let emp = empleados[empleadoActual];
-
+        const emp = empleados[empleadoActual];
         const render = (tipo, id) => {
-            let seccion = document.getElementById(id);
-
-            criterios[tipo].forEach((texto, i) => {
+            let root = document.getElementById(id);
+            (criteriosPorPuesto[puesto][tipo] || []).forEach((texto, i) => {
                 let fila = document.createElement("tr");
                 fila.className = "item-criterio";
-
                 let key = `radio_${tipo}_${i}`;
                 let valor = emp.respuestas[key];
-
-                fila.innerHTML = `
-                    <td style="text-align:left">${texto}</td>
-                    ${[0,1,2,3,4].map(n =>
-                        `<td><input type="radio" name="${key}" value="${n}" ${valor == n ? 'checked' : ''}></td>`
-                    ).join('')}
-                `;
-
-                seccion.insertAdjacentElement("afterend", fila);
-                seccion = fila;
+                fila.innerHTML = `<td style="text-align:left">${texto}</td>` + 
+                    [0,1,2,3,4].map(v => `<td><input type="radio" name="${key}" value="${v}" ${valor == v ? 'checked' : ''}></td>`).join('');
+                root.insertAdjacentElement("afterend", fila);
+                root = fila;
             });
         };
-
         render("habilidades", "sec-habilidades");
         render("conocimientos", "sec-conocimientos");
         render("antropometria", "sec-antropometria");
     }
 
     function mostrarEmpleados() {
-        let tbody = document.querySelector("#tablaEmpleados tbody");
-
-        tbody.innerHTML = empleados.map((emp, i) => `
-            <tr>
-                <td>${emp.nombre}</td>
-                <td>${emp.puesto}</td>
-                <td>
-                    <button onclick="evaluar(${i})">Evaluar</button>
-                    <button class="btn-eliminar" onclick="eliminarEmpleado(${i})">X</button>
-                </td>
-            </tr>
+        document.querySelector("#tablaEmpleados tbody").innerHTML = empleados.map((e, i) => `
+            <tr><td>${e.nombre}</td><td>${e.puesto}</td>
+            <td><button onclick="evaluar(${i})">Evaluar</button>
+            <button class="btn-eliminar" onclick="eliminarEmpleado(${i})">X</button></td></tr>
         `).join('');
     }
 
     function mostrarMatrizFinal() {
-        let tbody = document.querySelector("#tablaFinal tbody");
-
-        tbody.innerHTML = empleados
-            .filter(e => e.evaluacion)
-            .map(emp => `
-                <tr class="${emp.evaluacion.resultado === 'Apto' ? 'apto' : 'no-apto'}">
-                    <td>${emp.nombre}</td>
-                    <td>${emp.puesto}</td>
-                    <td>${emp.evaluacion.total}</td>
-                    <td>${emp.evaluacion.porcentaje}%</td>
-                    <td>${emp.evaluacion.resultado}</td>
-                </tr>
-            `).join('');
+        document.querySelector("#tablaFinal tbody").innerHTML = empleados.filter(e => e.evaluacion).map(e => `
+            <tr class="${e.evaluacion.resultado === 'Apto' ? 'apto' : 'no-apto'}">
+            <td>${e.nombre}</td><td>${e.puesto}</td><td>${e.evaluacion.total}</td>
+            <td>${e.evaluacion.porcentaje}%</td><td>${e.evaluacion.resultado}</td></tr>
+        `).join('');
     }
 
-    function filtrarEmpleados() {
-        let filtro = document.getElementById("buscarEmpleado").value.toLowerCase();
-
-        document.querySelectorAll("#tablaEmpleados tbody tr").forEach(fila => {
-            fila.style.display =
-                fila.cells[0].textContent.toLowerCase().includes(filtro)
-                    ? ""
-                    : "none";
+    window.eliminarEmpleado = (i) => { if(confirm("¿Eliminar?")) { empleados.splice(i, 1); sincronizar(); } };
+    window.limpiarTodo = () => { if(prompt("PIN ADMIN:") === PIN_ACCESO) { set(dbRef, null); } };
+    window.filtrarEmpleados = () => {
+        let f = document.getElementById("buscarEmpleado").value.toLowerCase();
+        document.querySelectorAll("#tablaEmpleados tbody tr").forEach(r => {
+            r.style.display = r.cells[0].textContent.toLowerCase().includes(f) ? "" : "none";
         });
-    }
-
-    function exportarCSV() {
-        let csv = "\ufeffFecha,Cuadrilla,Nombre,Puesto,Resultado,Detalle\n";
-
+    };
+    window.exportarCSV = () => {
+        let csv = "\ufeffFecha,Nombre,Puesto,%,Resultado\n";
         empleados.forEach(e => {
-            let res = e.evaluacion
-                ? `${e.evaluacion.porcentaje}%,${e.evaluacion.resultado}`
-                : "Pendiente,Pendiente";
-
-            let det = e.detalleTexto?.join(" | ") || "";
-
-            csv += `"${e.fecha}","${e.cuadrilla}","${e.nombre}","${e.puesto}",${res},"${det}"\n`;
+            csv += `"${e.fecha}","${e.nombre}","${e.puesto}","${e.evaluacion?.porcentaje || 0}%","${e.evaluacion?.resultado || 'N/A'}"\n`;
         });
-
-        let link = document.createElement("a");
-        link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-        link.download = "Matriz_Habilidades.csv";
-        link.click();
-    }
+        let blob = new Blob([csv], { type: 'text/csv' });
+        let a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "Matriz.csv";
+        a.click();
+    };
 }
