@@ -79,7 +79,21 @@ export function iniciarApp(db, ref, set, onValue, push) {
     };
 
     window.agregarItem = (tipo) => {
+        if (empleadoActual === null) {
+            alert("Primero selecciona un empleado en 'Evaluar' para definir las habilidades de su puesto.");
+            return;
+        }
+        
         let puesto = empleados[empleadoActual].puesto;
+
+        // Asegurar que la estructura existe en la base de datos
+        if (!criteriosPorPuesto[puesto]) {
+            criteriosPorPuesto[puesto] = { habilidades: [], conocimientos: [], antropometria: [] };
+        }
+        if (!criteriosPorPuesto[puesto][tipo]) {
+            criteriosPorPuesto[puesto][tipo] = [];
+        }
+
         let texto = prompt(`Nuevo ${tipo}:`);
 
         if (texto) {
