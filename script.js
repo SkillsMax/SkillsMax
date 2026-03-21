@@ -3,34 +3,29 @@ let criteriosPorPuesto = {};
 let empleadoActual = null;
 const PIN_ACCESO = "1432";
 
-export function iniciarApp(db, ref, set, onValue) {
+export function iniciarApp(db, ref, set, onValue, push) {
     const dbRef = ref(db, 'matriz_habilidades');
 
-    // --- ESCUCHAR CAMBIOS DESDE LA NUBE ---
+    // --- SINCRONIZACIÓN ---
     onValue(dbRef, (snapshot) => {
         const data = snapshot.val();
         empleados = data?.empleados || [];
         criteriosPorPuesto = data?.criterios || {};
         mostrarEmpleados();
         mostrarMatrizFinal();
-        // Si hay una evaluación abierta, refrescarla
-        if (empleadoActual !== null) renderizarMatriz(empleados[empleadoActual].puesto);
     });
 
-    const sincronizarNube = () => {
-        document.getElementById("estadoGuardado").innerText = "⏳ Sincronizando...";
-        set(dbRef, { empleados, criterios: criteriosPorPuesto })
-            .then(() => {
-                document.getElementById("estadoGuardado").innerText = "✅ Cambios guardados automáticamente";
-            });
+    const sincronizar = () => {
+        set(dbRef, { empleados, criterios: criteriosPorPuesto });
     };
 
+    // --- NAVEGACIÓN ---
     window.cambiarSeccion = (id) => {
         document.querySelectorAll('.apartado').forEach(s => s.classList.add('oculto'));
         document.getElementById(id).classList.remove('oculto');
     };
 
-    // --- AGREGAR EMPLEADO ---
+    // --- LÓGICA DE EMPLEADOS ---
     document.getElementById("formEmpleado").addEventListener("submit", function(e) {
         e.preventDefault();
         let nuevo = {
@@ -41,41 +36,50 @@ export function iniciarApp(db, ref, set, onValue) {
             peso: document.getElementById("peso").value,
             estatura: document.getElementById("estatura").value,
             escolaridad: document.getElementById("escolaridad").value,
-            evaluacion: null, respuestas: {}, fecha: "Pendiente"
+            evaluacion: null, respuestas: {}, detalleTexto: [], fecha: "Pendiente"
         };
         empleados.push(nuevo);
-        sincronizarNube();
+        sincronizar();
         this.reset();
+        alert("✅ Empleado registrado");
     });
 
     window.evaluar = (index) => {
-        let pass = prompt("🔒 PIN:");
-        if (pass !== PIN_ACCESO) return alert("Error");
+        let pass = prompt("🔒 PIN de Evaluador:");
+        if (pass !== PIN_ACCESO) return alert("Incorrecto");
+
         empleadoActual = index;
-        cambiarSeccion('seccion-evaluacion');
+        let emp = empleados[index];
+        document.getElementById("tituloEmpleado").innerText = `Evaluando a: ${emp.nombre} (${emp.puesto})`;
+        
+        if (!criteriosPorPuesto[emp.puesto]) {
+            criteriosPorPuesto[emp.puesto] = { habilidades: [], conocimientos: [], antropometria: [] };
+        }
+
+        renderizarMatriz(emp.puesto);
         document.getElementById("evaluacion").classList.remove("oculto");
-        document.getElementById("tituloEmpleado").innerText = `Empleado: ${empleados[index].nombre}`;
-        renderizarMatriz(empleados[index].puesto);
+        cambiarSeccion('seccion-evaluacion');
     };
 
     window.agregarItem = (tipo) => {
+        if (empleadoActual === null) return alert("Selecciona un empleado primero");
         let puesto = empleados[empleadoActual].puesto;
-        let texto = prompt(`Nuevo concepto para ${tipo}:`);
+        let texto = prompt(`Nuevo concepto de ${tipo}:`);
         if (texto) {
-            if (!criteriosPorPuesto[puesto]) criteriosPorPuesto[puesto] = {habilidades:[], conocimientos:[], antropometria:[]};
+            if (!criteriosPorPuesto[puesto][tipo]) criteriosPorPuesto[puesto][tipo] = [];
             criteriosPorPuesto[puesto][tipo].push(texto);
-            sincronizarNube();
+            sincronizar();
+            renderizarMatriz(puesto);
         }
     };
 
-    // --- ESTA FUNCIÓN SE EJECUTA EN CADA CLICK ---
-    window.autoGuardar = () => {
+    window.guardarEvaluacion = () => {
         let emp = empleados[empleadoActual];
         let criterios = criteriosPorPuesto[emp.puesto];
         let total = 0, n = 0;
 
         ['habilidades', 'conocimientos', 'antropometria'].forEach(t => {
-            (criterios[t] || []).forEach((_, i) => {
+            criterios[t].forEach((text, i) => {
                 let radio = document.querySelector(`input[name="radio_${t}_${i}"]:checked`);
                 if (radio) {
                     let v = parseInt(radio.value);
@@ -86,29 +90,30 @@ export function iniciarApp(db, ref, set, onValue) {
             });
         });
 
-        if (n > 0) {
-            let porc = (total / (n * 4)) * 100;
-            emp.evaluacion = { total, porcentaje: porc.toFixed(2), resultado: porc >= 70 ? "Apto" : "No apto" };
-            emp.fecha = new Date().toLocaleString();
-            sincronizarNube();
-        }
+        if (n === 0) return alert("No hay criterios para evaluar");
+        
+        let porc = (total / (n * 4)) * 100;
+        emp.evaluacion = { total, porcentaje: porc.toFixed(2), resultado: porc >= 70 ? "Apto" : "No apto" };
+        emp.fecha = new Date().toLocaleString();
+        
+        sincronizar();
+        alert("⭐⭐ Evaluación Guardada");
+        document.getElementById("evaluacion").classList.add("oculto");
     };
 
+    // --- RENDERIZADO ---
     function renderizarMatriz(puesto) {
         document.querySelectorAll(".item-criterio").forEach(el => el.remove());
         const emp = empleados[empleadoActual];
-        if (!criteriosPorPuesto[puesto]) return;
-
         const render = (tipo, id) => {
             let root = document.getElementById(id);
             (criteriosPorPuesto[puesto][tipo] || []).forEach((texto, i) => {
                 let fila = document.createElement("tr");
                 fila.className = "item-criterio";
                 let key = `radio_${tipo}_${i}`;
-                let valorActual = emp.respuestas[key];
-
-                fila.innerHTML = `<td>${texto}</td>` + 
-                    [0,1,2,3,4].map(v => `<td><input type="radio" name="${key}" value="${v}" onchange="autoGuardar()" ${valorActual == v ? 'checked' : ''}></td>`).join('');
+                let valor = emp.respuestas[key];
+                fila.innerHTML = `<td style="text-align:left">${texto}</td>` + 
+                    [0,1,2,3,4].map(v => `<td><input type="radio" name="${key}" value="${v}" ${valor == v ? 'checked' : ''}></td>`).join('');
                 root.insertAdjacentElement("afterend", fila);
                 root = fila;
             });
@@ -134,8 +139,8 @@ export function iniciarApp(db, ref, set, onValue) {
         `).join('');
     }
 
-    window.eliminarEmpleado = (i) => { if(confirm("¿Eliminar?")) { empleados.splice(i, 1); sincronizarNube(); } };
-    window.limpiarTodo = () => { if(prompt("PIN ADMIN:") === PIN_ACCESO) set(dbRef, null); };
+    window.eliminarEmpleado = (i) => { if(confirm("¿Eliminar?")) { empleados.splice(i, 1); sincronizar(); } };
+    window.limpiarTodo = () => { if(prompt("PIN ADMIN:") === PIN_ACCESO) { set(dbRef, null); } };
     window.filtrarEmpleados = () => {
         let f = document.getElementById("buscarEmpleado").value.toLowerCase();
         document.querySelectorAll("#tablaEmpleados tbody tr").forEach(r => {
@@ -144,10 +149,13 @@ export function iniciarApp(db, ref, set, onValue) {
     };
     window.exportarCSV = () => {
         let csv = "\ufeffFecha,Nombre,Puesto,%,Resultado\n";
-        empleados.forEach(e => csv += `"${e.fecha}","${e.nombre}","${e.puesto}","${e.evaluacion?.porcentaje || 0}%","${e.evaluacion?.resultado || 'N/A'}"\n`);
-        let link = document.createElement("a");
-        link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-        link.download = "Matriz.csv";
-        link.click();
+        empleados.forEach(e => {
+            csv += `"${e.fecha}","${e.nombre}","${e.puesto}","${e.evaluacion?.porcentaje || 0}%","${e.evaluacion?.resultado || 'N/A'}"\n`;
+        });
+        let blob = new Blob([csv], { type: 'text/csv' });
+        let a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "Matriz.csv";
+        a.click();
     };
 }
