@@ -2,7 +2,7 @@
 let empleados = [];
 let criteriosPorPuesto = {};
 let empleadoActual = null;
-const PIN_ACCESO = "1234";
+const PIN_ACCESO = "1432";
 
 export function iniciarApp(db, ref, set, onValue, push) {
     const dbRef = ref(db, 'matriz_habilidades');
