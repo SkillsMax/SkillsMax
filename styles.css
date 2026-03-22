@@ -46,12 +46,12 @@ button:hover { opacity: 0.8; }
     border-radius: 8px;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     margin-bottom: 30px;
-    padding: 10px;
+    padding: 15px;
 }
 
 table { width: 100%; border-collapse: collapse; min-width: 600px; margin-top: 10px; }
 th, td { border: 1px solid #eee; padding: 12px; text-align: center; }
-th { background-color: #f8f9fa; }
+th { background-color: #f8f9fa; font-weight: bold; }
 .seccion td { background-color: #e9ecef; font-weight: bold; text-align: left; }
 
 .apto { background-color: #d4edda; color: #155724; }
