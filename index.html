@@ -26,21 +26,6 @@
         </form>
     </div>
 
-    <div class="table-responsive">
-        <h2>Personal Registrado</h2>
-        <input type="text" id="buscarEmpleado" class="buscador" placeholder="🔍 Buscar por nombre...">
-        <table>
-            <thead>
-                <tr>
-                    <th>Nombre</th>
-                    <th>Puesto</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody id="tablaEmpleados"></tbody>
-        </table>
-    </div>
-
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
         import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
@@ -89,33 +74,6 @@
             sincronizar();
             this.reset();
             alert("✅ Empleado registrado con éxito");
-        });
-
-        // Borrar empleado
-        window.eliminarEmpleado = (i) => {
-            if(confirm("¿Seguro que deseas eliminar a este empleado?")) {
-                empleados.splice(i, 1);
-                sincronizar();
-            }
-        };
-
-        // Mostrar en tabla
-        function renderizarTabla() {
-            document.getElementById("tablaEmpleados").innerHTML = empleados.map((e, i) => `
-                <tr>
-                    <td>${e.nombre}</td>
-                    <td>${e.puesto}</td>
-                    <td><button class="btn-eliminar" onclick="eliminarEmpleado(${i})">Eliminar</button></td>
-                </tr>
-            `).join('');
-        }
-
-        // Buscador
-        document.getElementById("buscarEmpleado").addEventListener("keyup", function() {
-            let f = this.value.toLowerCase();
-            document.querySelectorAll("#tablaEmpleados tr").forEach(r => {
-                r.style.display = r.cells[0].textContent.toLowerCase().includes(f) ? "" : "none";
-            });
         });
     </script>
 </body>
