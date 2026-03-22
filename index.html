@@ -3,18 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registro de Personal</title>
+    <title>Registro de Empleados</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <h1>Módulo 1: Registro de Personal</h1>
+    <h1>Registro de Personal</h1>
+    <hr>
+    
     <div class="table-responsive">
-        <h2>Nuevo Empleado</h2>
+        <h2>Registrar Nuevo Empleado</h2>
         <form id="formEmpleado">
             <div class="grid-form">
                 <input type="text" id="cuadrilla" placeholder="Cuadrilla" required>
                 <input type="text" id="nombre" placeholder="Nombre completo" required>
-                <input type="number" id="anios" placeholder="Edad/Años" required>
+                <input type="number" id="anios" placeholder="Años" required>
                 <input type="number" id="peso" placeholder="Peso (kg)" required>
                 <input type="number" step="0.01" id="estatura" placeholder="Estatura (m)" required>
                 <input type="text" id="escolaridad" placeholder="Escolaridad" required>
@@ -25,7 +27,7 @@
     </div>
 
     <div class="table-responsive">
-        <h2>Lista de Empleados</h2>
+        <h2>Personal Registrado</h2>
         <input type="text" id="buscarEmpleado" class="buscador" placeholder="🔍 Buscar por nombre...">
         <table>
             <thead>
@@ -39,6 +41,82 @@
         </table>
     </div>
 
-    <script type="module" src="registro.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCNokOSiV483vppPmDwtWs0nH1evzZwbjU",
+            authDomain: "matriz-de-habilidades-c4bd5.firebaseapp.com",
+            databaseURL: "https://matriz-de-habilidades-c4bd5-default-rtdb.firebaseio.com",
+            projectId: "matriz-de-habilidades-c4bd5"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const dbRef = ref(db, 'matriz_habilidades');
+
+        let empleados = [];
+        let criteriosPorPuesto = {};
+
+        // Sincronizar lectura
+        onValue(dbRef, (snapshot) => {
+            const data = snapshot.val();
+            empleados = data?.empleados || [];
+            criteriosPorPuesto = data?.criterios || {};
+            renderizarTabla();
+        });
+
+        // Sincronizar escritura
+        const sincronizar = () => set(dbRef, { empleados, criterios: criteriosPorPuesto });
+
+        // Agregar empleado
+        document.getElementById("formEmpleado").addEventListener("submit", function(e) {
+            e.preventDefault();
+            let nuevo = {
+                nombre: document.getElementById("nombre").value.trim(),
+                puesto: document.getElementById("puesto").value.trim().toUpperCase(),
+                cuadrilla: document.getElementById("cuadrilla").value,
+                anios: document.getElementById("anios").value,
+                peso: document.getElementById("peso").value,
+                estatura: document.getElementById("estatura").value,
+                escolaridad: document.getElementById("escolaridad").value,
+                evaluacion: null, 
+                detalleEvaluacion: [], // Nuevo arreglo para guardar los conceptos para el Excel
+                fecha: "Pendiente"
+            };
+            empleados.push(nuevo);
+            sincronizar();
+            this.reset();
+            alert("✅ Empleado registrado con éxito");
+        });
+
+        // Borrar empleado
+        window.eliminarEmpleado = (i) => {
+            if(confirm("¿Seguro que deseas eliminar a este empleado?")) {
+                empleados.splice(i, 1);
+                sincronizar();
+            }
+        };
+
+        // Mostrar en tabla
+        function renderizarTabla() {
+            document.getElementById("tablaEmpleados").innerHTML = empleados.map((e, i) => `
+                <tr>
+                    <td>${e.nombre}</td>
+                    <td>${e.puesto}</td>
+                    <td><button class="btn-eliminar" onclick="eliminarEmpleado(${i})">Eliminar</button></td>
+                </tr>
+            `).join('');
+        }
+
+        // Buscador
+        document.getElementById("buscarEmpleado").addEventListener("keyup", function() {
+            let f = this.value.toLowerCase();
+            document.querySelectorAll("#tablaEmpleados tr").forEach(r => {
+                r.style.display = r.cells[0].textContent.toLowerCase().includes(f) ? "" : "none";
+            });
+        });
+    </script>
 </body>
 </html>
