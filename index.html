@@ -3,69 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Matriz de Habilidades</title>
-    <link rel="stylesheet" href="styles.css">
-    <style>
-        .contenedor-inicio {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 80vh;
-            text-align: center;
-        }
-        .tarjetas-menu {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            width: 100%;
-            max-width: 800px;
-            margin-top: 30px;
-        }
-        .tarjeta {
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            transition: transform 0.3s;
-            text-decoration: none;
-            color: inherit;
-            border: 2px solid transparent;
-        }
-        .tarjeta:hover {
-            transform: translateY(-5px);
-            border-color: #007BFF;
-        }
-        .tarjeta h3 { color: #007BFF; margin-bottom: 10px; }
-        .tarjeta p { font-size: 0.9rem; color: #666; }
-        .icono { font-size: 3rem; margin-bottom: 15px; display: block; }
-    </style>
-</head>
-<body>
-
-    <div class="contenedor-inicio">
-        <h1>Control de Matriz de Habilidades</h1>
-        <p>Seleccione el módulo al que desea ingresar</p>
-
-        <div class="tarjetas-menu">
-            <a href="registro.html" class="tarjeta">
-                <span class="icono">📝</span>
-                <h3>Registro de Personal</h3>
-                <p>Dar de alta nuevos empleados, editar información básica y gestionar la lista de personal activo.</p>
-            </a>
-
-            <a href="evaluacion.html" class="tarjeta">
-                <span class="icono">📊</span>
-                <h3>Evaluación y Reportes</h3>
-                <p>Calificar habilidades, conocimientos y medidas. Generar reportes detallados en formato Excel.</p>
-            </a>
-        </div>
-    </div>
-
-</body>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registro de Personal</title>
     <link rel="stylesheet" href="styles.css">
 </head>
