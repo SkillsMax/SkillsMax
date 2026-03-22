@@ -3,21 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Matriz de Habilidades - Sistema Industrial</title>
+    <title>Registro de Empleados</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-
-    <h1>Matriz de Habilidades</h1>
-
-    <nav class="menu-navegacion">
-        <button onclick="cambiarSeccion('seccion-registro')">1. Registro de Personal</button>
-        <button onclick="cambiarSeccion('seccion-evaluacion')">2. Evaluación y Resultados</button>
-    </nav>
-
+    <h1>Registro de Personal</h1>
     <hr>
-
-    <section id="seccion-registro" class="apartado">
+    
+    <div class="table-responsive">
         <h2>Registrar Nuevo Empleado</h2>
         <form id="formEmpleado">
             <div class="grid-form">
@@ -29,92 +22,100 @@
                 <input type="text" id="escolaridad" placeholder="Escolaridad" required>
                 <input type="text" id="puesto" placeholder="Puesto" required>
             </div>
-            <button type="submit" class="btn-principal">Agregar a la lista</button>
+            <button type="submit" class="btn-principal">Agregar a la base de datos</button>
         </form>
+    </div>
 
-        <h2>Lista de Empleados Registrados</h2>
-        <input type="text" id="buscarEmpleado" class="buscador" placeholder="🔍 Buscar por nombre..." onkeyup="filtrarEmpleados()">
-        <div class="table-responsive">
-            <table id="tablaEmpleados">
-                <thead>
-                    <tr>
-                        <th>Nombre</th>
-                        <th>Puesto</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
-    </section>
-
-    <section id="seccion-evaluacion" class="apartado oculto">
-        <div id="evaluacion" class="contenedor-evaluacion oculto">
-            <h2 id="tituloEmpleado">Seleccione un empleado para evaluar</h2>
-            <div class="controles">
-                <button onclick="agregarItem('habilidades')">+ Habilidad</button>
-                <button onclick="agregarItem('conocimientos')">+ Conocimiento</button>
-                <button onclick="agregarItem('antropometria')">+ Antropometría</button>
-            </div>
-            <div class="table-responsive">
-                <table class="matriz">
-                    <thead>
-                        <tr>
-                            <th>Concepto</th>
-                            <th>0</th><th>1</th><th>2</th><th>3</th><th>4</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tablaMatriz">
-                        <tr class="seccion" id="sec-habilidades"><td colspan="6">HABILIDADES</td></tr>
-                        <tr class="seccion" id="sec-conocimientos"><td colspan="6">CONOCIMIENTOS</td></tr>
-                        <tr class="seccion" id="sec-antropometria"><td colspan="6">MEDIDAS ANTROPOMÉTRICAS</td></tr>
-                    </tbody>
-                </table>
-            </div>
-            <button class="btn-guardar" onclick="guardarEvaluacion()">Guardar Evaluación en la Nube</button>
-        </div>
-
-        <h2>Resultados Generales</h2>
-        <div class="controles">
-            <button onclick="exportarCSV()" style="background-color: #17a2b8;">Exportar a Excel (CSV)</button>
-            <button onclick="limpiarTodo()" class="btn-eliminar">Borrar Base de Datos</button>
-        </div>
-        <div class="table-responsive">
-            <table id="tablaFinal">
-                <thead>
-                    <tr>
-                        <th>Nombre</th>
-                        <th>Puesto</th>
-                        <th>Puntaje</th>
-                        <th>%</th>
-                        <th>Resultado</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
-    </section>
+    <div class="table-responsive">
+        <h2>Personal Registrado</h2>
+        <input type="text" id="buscarEmpleado" class="buscador" placeholder="🔍 Buscar por nombre...">
+        <table>
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Puesto</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="tablaEmpleados"></tbody>
+        </table>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-        import { getDatabase, ref, set, onValue, push } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
-        import { iniciarApp } from "./script.js";
+        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCNokOSiV483vppPmDwtWs0nH1evzZwbjU",
             authDomain: "matriz-de-habilidades-c4bd5.firebaseapp.com",
             databaseURL: "https://matriz-de-habilidades-c4bd5-default-rtdb.firebaseio.com",
-            projectId: "matriz-de-habilidades-c4bd5",
-            storageBucket: "matriz-de-habilidades-c4bd5.firebasestorage.app",
-            messagingSenderId: "190967468978",
-            appId: "1:190967468978:web:8e40bde48a4a2355814aab"
+            projectId: "matriz-de-habilidades-c4bd5"
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
+        const dbRef = ref(db, 'matriz_habilidades');
 
-        window.addEventListener("DOMContentLoaded", () => {
-            iniciarApp(db, ref, set, onValue, push);
+        let empleados = [];
+        let criteriosPorPuesto = {};
+
+        // Sincronizar lectura
+        onValue(dbRef, (snapshot) => {
+            const data = snapshot.val();
+            empleados = data?.empleados || [];
+            criteriosPorPuesto = data?.criterios || {};
+            renderizarTabla();
+        });
+
+        // Sincronizar escritura
+        const sincronizar = () => set(dbRef, { empleados, criterios: criteriosPorPuesto });
+
+        // Agregar empleado
+        document.getElementById("formEmpleado").addEventListener("submit", function(e) {
+            e.preventDefault();
+            let nuevo = {
+                nombre: document.getElementById("nombre").value.trim(),
+                puesto: document.getElementById("puesto").value.trim().toUpperCase(),
+                cuadrilla: document.getElementById("cuadrilla").value,
+                anios: document.getElementById("anios").value,
+                peso: document.getElementById("peso").value,
+                estatura: document.getElementById("estatura").value,
+                escolaridad: document.getElementById("escolaridad").value,
+                evaluacion: null, 
+                detalleEvaluacion: [], // Nuevo arreglo para guardar los conceptos para el Excel
+                fecha: "Pendiente"
+            };
+            empleados.push(nuevo);
+            sincronizar();
+            this.reset();
+            alert("✅ Empleado registrado con éxito");
+        });
+
+        // Borrar empleado
+        window.eliminarEmpleado = (i) => {
+            if(confirm("¿Seguro que deseas eliminar a este empleado?")) {
+                empleados.splice(i, 1);
+                sincronizar();
+            }
+        };
+
+        // Mostrar en tabla
+        function renderizarTabla() {
+            document.getElementById("tablaEmpleados").innerHTML = empleados.map((e, i) => `
+                <tr>
+                    <td>${e.nombre}</td>
+                    <td>${e.puesto}</td>
+                    <td><button class="btn-eliminar" onclick="eliminarEmpleado(${i})">Eliminar</button></td>
+                </tr>
+            `).join('');
+        }
+
+        // Buscador
+        document.getElementById("buscarEmpleado").addEventListener("keyup", function() {
+            let f = this.value.toLowerCase();
+            document.querySelectorAll("#tablaEmpleados tr").forEach(r => {
+                r.style.display = r.cells[0].textContent.toLowerCase().includes(f) ? "" : "none";
+            });
         });
     </script>
 </body>
